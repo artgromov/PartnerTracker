@@ -7,8 +7,23 @@ import sys
 import webbrowser
 
 
-scripted = False
+STATE = ['init',
+         'syn',
+         'ack',
+         'full',
+         'test',
+         'ignore',
+         'noan',
+         'na'
+         ]
 
+def to_list(val):
+    if isinstance(val, (list, tuple)):
+        return list(val)
+    elif val is not None:
+        return [val]
+    else:
+        return list()
 
 class PartnerFinder:        
     def __init__(self):
@@ -57,8 +72,9 @@ class PartnerFinder:
         # update existing objects
         updated = 0
         for i in self.objects:
-            if not i.ignored:
-                updated += i.load_from_web(i.link)
+            if i.state != STATE[5]:
+                if i.provider == 'dancesport.ru':
+                    updated += i.load_from_web(i.link)
 
         # get search data
         links = self.search_for_links(self.search_url)
@@ -77,7 +93,7 @@ class PartnerFinder:
                 added += 1
         return updated, added
 
-    def dump_to_yaml(self, filename='partners.yml'):
+    def save_to_yaml(self, filename='partners.yml'):
         data = [i.data for i in self.objects]
         with open(filename, 'w', encoding='utf-8') as datafile:
             yaml.dump(data, datafile, default_flow_style=False, allow_unicode=True, width=1000)
@@ -99,17 +115,16 @@ class Partner:
                      'class_st': '',
                      'class_la': '',
                      'description': '',
-                     'closed': False,
                      'notes': '',
-                     'wrote_times': '',
-                     'ignored': False
+                     'state': STATE[0],
+                     'provider': '',
                      }
 
     def __getattr__(self, item):
         return self.data[item]
 
     def __repr__(self):
-        return '{id:4} {name:20} {class_st:1} {class_la:1} {link}\nDescription: {description}\nNotes: {notes}\n'.format(**self.data)
+        return '{id:4} {state:6.6} {name:20} {class_st:1} {class_la:1} {description}. Notes: {notes}'.format(**self.data)
 
     def load_from_dict(self, new_data):
         updated = 0
@@ -131,7 +146,7 @@ class Partner:
         page = requests.get(self.link)
 
         if page.status_code == 404:
-            new_data['closed'] = True
+            new_data['state'] = STATE[7]
 
         elif page.status_code == 200:
             soup = BeautifulSoup(page.text, "html.parser")
@@ -171,14 +186,16 @@ class Partner:
                 if i.startswith('Рост'):
                     new_data['height'] = int(i.split(':')[1].split(' ')[0])
                     continue
-                if i.startswith('St'):
-                    new_data['class_st'] = i[4]
-                    if len(i) > 6:
-                        new_data['class_la'] = i[12]
-                    continue
-                if i.startswith('La'):
-                    new_data['class_la'] = i[4]
-                    continue
+                if i.startswith('Класс'):
+                    class_string = i.split(':')[1].strip()
+                    if class_string.startswith('St'):
+                        new_data['class_st'] = class_string[4]
+                        if len(i) > 6:
+                            new_data['class_la'] = class_string[12]
+                        continue
+                    if class_string.startswith('La'):
+                        new_data['class_la'] = class_string[4]
+                        continue
                 if i.startswith('Клуб'):
                     new_data['club'] = i.split(':')[1]
                     continue
@@ -193,9 +210,10 @@ def interactive(partner_finder):
     usage = lambda : print('''Available actions:
     w    - update from web
     y    - update from yaml
-    d    - dump to yaml
-    p[x] - print to console (not ignored and not closed, x = number of times wrote)
-    o[x] - open in default web browser (not ignored and not closed, x = number of times wrote)
+    s    - save to yaml
+    psl  - print state list
+    p[x] - print to console (default states 0 - 4, x = state)
+    o[x] - open in default web browser (default states 0 - 4, x = state)
     q - quit''')
 
     usage()
@@ -209,76 +227,65 @@ def interactive(partner_finder):
             print('Updated: {} Added: {}'.format(u, a))
 
         elif key == 'y':
-            print('Updating from yaml...')
+            print('Loading from yaml...')
             u, a = partner_finder.update_from_yaml()
             print('Updated: {} Added: {}'.format(u, a))
 
-        elif key == 'd':
-            print('Dumping to yaml...')
-            l = partner_finder.dump_to_yaml()
-            print('Dumped: {} lines'.format(l))
+        elif key == 's':
+            print('Saving to yaml...')
+            l = partner_finder.save_to_yaml()
+            print('Saved: {} lines'.format(l))
 
-        elif key == 'pi':
-            for i in partner_finder.objects:
-                if i.ignored and not i.closed:
-                    print(i)
+        elif key == 'psl':
+            print('State list:')
+            for n, i in enumerate(STATE):
+                print('{} - {}'.format(n, i))
 
         elif key.startswith('o') or key.startswith('p'):
-            if len(key) == 1:
-                operation = key[0]
-                count = None
-            elif len(key) == 2 and key[1].isdigit():
-                operation = key[0]
-                count = int(key[1])
+            operation = key[0]
+            start_state = 0
+            end_state = 4
 
+            if len(key) == 2 and key[1].isdigit():
+                start_state = int(key[1])
+                end_state = start_state
+
+            elif len(key) == 3 and key[1].isdigit() and key[2].isdigit():
+                start_state = int(key[1])
+                end_state = int(key[2])
+
+
+            states = to_list(STATE[start_state:end_state + 1])
+
+            counter = 0
             for i in partner_finder.objects:
-                selected = False
-                if not i.ignored and not i.closed:
-                    if count:
-                        if i.wrote_times == count:
-                            selected = True
-                    else:
-                        selected = True
-
-                if selected:
+                if i.state in states:
+                    counter += 1
                     if operation == 'p':
                         print(i)
                     elif operation == 'o':
                         webbrowser.open(i.link)
+            print('Printed {} lines'.format(counter))
 
         elif key == 'q':
             print('Quitting...')
             sys.exit(0)
 
+        elif key == '':
+            pass
+
         else:
             usage()
 
 
-def update_and_open(partner_finder):
-    print('Updating from yaml...')
-    u, a = partner_finder.update_from_yaml()
-    print('Updated: {} Added: {}'.format(u, a))
-
-    print('Updating from web...')
-    u, a = partner_finder.update_from_web()
-    print('Updated: {} Added: {}'.format(u, a))
-
-    print('Dumping to yaml...')
-    l = partner_finder.dump_to_yaml()
-    print('Dumped: {} lines'.format(l))
-
-    active = [i for i in partner_finder.objects if not i.ignored and not i.closed]
-    print('Opening {} active ads in firefox...'.format(len(active)))
-    for i in active:
-        Popen(r'C:\Program Files (x86)\Mozilla Firefox\firefox.exe ' + i.link, stdout=DEVNULL, stderr=DEVNULL)
-
-    sys.exit(0)
-
-
 if __name__ == '__main__':
     engine = PartnerFinder()
+    
+    print('Updating from yaml...')
+    u, a = engine.update_from_yaml()
+    print('Updated: {} Added: {}'.format(u, a))
 
-    if not scripted:
-        interactive(engine)
-    else:
-        update_and_open(engine)
+    interactive(engine)
+
+else:
+    pass

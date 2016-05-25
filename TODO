@@ -1,0 +1,7 @@
+- add terminaltables output
+- migrate load_from_web parsing to separate adapter class for dancesport
+- create more robust and easy for debugging STATE class
+- migrate to special cli/cmd module
+- add logging and debugging messages
+- break into several modules
+- add interactive workflow
