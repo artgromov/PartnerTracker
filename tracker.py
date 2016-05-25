@@ -7,6 +7,8 @@ import sys
 import webbrowser
 
 
+DEBUG = False
+
 STATE = ['init',
          'syn',
          'ack',
@@ -278,14 +280,24 @@ def interactive(partner_finder):
             usage()
 
 
+
 if __name__ == '__main__':
-    engine = PartnerFinder()
-    
-    print('Updating from yaml...')
-    u, a = engine.update_from_yaml()
-    print('Updated: {} Added: {}'.format(u, a))
+    if DEBUG:
+        #
+        # put debug and tests code here
+        #
 
-    interactive(engine)
 
-else:
-    pass
+    else:
+        #
+        # put production code here
+        #
+
+        engine = PartnerFinder()
+        
+        print('Updating from yaml...')
+        u, a = engine.update_from_yaml()
+        print('Updated: {} Added: {}'.format(u, a))
+
+        interactive(engine)
+
