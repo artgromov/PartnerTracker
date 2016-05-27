@@ -24,12 +24,10 @@ class Partner:
 
     def __init__(self):
         self.log = logging.getLogger(__name__)
-
         self.id = uuid.uuid4()
         self.state = Partner.NEW
 
         self.name = None
-        self.surname = None
         self.phone = None
         self.email = None
 
@@ -62,13 +60,12 @@ class Partner:
         
         self.provider = None
 
-
     def __repr__(self):
         return '<{state:25} {name:20} {class_st:1} {class_la:1} {description:27.27}>'.format(**self.__dict__)
 
 
     def set_schedule(self, spec):
-        match = _schedule_pattern.search(spec):
+        match = _schedule_pattern.search(spec)
         changed = False
         if match:
             rate = match.group('rate')
@@ -91,6 +88,16 @@ class Partner:
         
         return changed
 
+    def diff(self, other):
+        diff = {}
+        for key in self.__dict__.keys():
+            if key != log:
+                self_attr = self.__dict__[key]
+                other_attr = other.__dict__[key]
+                if self_attr != other_attr:
+                    diff[key] = (self_attr, other_attr)
+
+        return diff
 
     def merge_dict(self, data):
         changed = False
@@ -106,4 +113,6 @@ class Partner:
 
 
 
-
+if __name__ == '__main__':
+    a = Partner()
+    print(a.__dict__)
