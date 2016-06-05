@@ -1,6 +1,5 @@
 import logging
 import uuid
-import sys
 import re
 
 
@@ -14,6 +13,7 @@ class Partner:
     IGN     = 'Ignored'
     NOAN    = 'Still no answer'
     NA      = 'Source not found'
+    DEL     = 'Should be deleted'
 
     _schedule_pattern = re.compile('^(?P<rate>[0-9])p(?P<num>[0-9]?)(?P<interval>[wmy])')
     _schedule_intervals = {'w': 'week',
@@ -23,9 +23,9 @@ class Partner:
 
 
     def __init__(self):
-        self.log = logging.getLogger(__name__)
         self.id = uuid.uuid4()
         self.state = Partner.NEW
+        self.providers = []
 
         self.name = None
         self.phone = None
@@ -45,7 +45,8 @@ class Partner:
         self.goal = None
         self.expectations = None
         self.competition_last_date = None
-        self.links = []
+        self.images = []
+        self.videos = []
 
         self.change_org = None
         self.change_club = None
@@ -57,8 +58,7 @@ class Partner:
         self.schedule_training_time = None
 
         self.notes = []
-        
-        self.provider = None
+
 
     def __repr__(self):
         return '<{state:25} {name:20} {class_st:1} {class_la:1} {description:27.27}>'.format(**self.__dict__)
@@ -80,12 +80,8 @@ class Partner:
             else:
                 schedule = '{} per {}'.format(rate, interval)
 
-            self.log.debug('schedule set to "{}"'.format(schedule))
             changed = True
 
-        else:
-            self.log.error('incorrect schedule specification "{}"'.format(spec))
-        
         return changed
 
     def diff(self, other):
