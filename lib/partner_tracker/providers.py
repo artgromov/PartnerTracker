@@ -28,8 +28,8 @@ class ProviderDancesportRu:
 
         self.number = None
         self.name = None
-        self.images = set()
-        self.videos = set()
+        self.images = []
+        self.videos = []
         self.description = None
         self.birth = None
         self.city = None
@@ -46,7 +46,7 @@ class ProviderDancesportRu:
         return hash(self.id)
 
     def __repr__(self):
-        return 'ProviderDancesportRu(%s, %s)' %(self.id, self.date)
+        return 'ProviderDancesportRu(%s, %s)' % (self.id, self.date)
 
     def __str__(self):
         string = ''
@@ -58,10 +58,10 @@ class ProviderDancesportRu:
         if new_value:
             old_value = self.__dict__[name]
 
-            if isinstance(old_value, set):
+            if isinstance(old_value, list):
                 if new_value not in old_value:
                     logger.debug('updating attribute: "%s" with value: "%s" ' % (name, new_value))
-                    old_value.add(new_value)
+                    old_value.append(new_value)
                     self.changes.add(name)
 
             else:
@@ -93,14 +93,14 @@ class ProviderDancesportRu:
                     image = self.base_url + image_div.find('img').get('data-colorbox')
                     self.update_attribute('images', image)
 
-                    images = image_div.find_all('div',{'class': 'one-img cboxElement'})
+                    images = image_div.find_all('div', {'class': 'one-img cboxElement'})
                     if images:
                         for tag in images:
                             image = self.base_url + tag.get('data-colorbox')
                             self.update_attribute('images', image)
 
                 # Get videos
-                videos = target_div.find_all('iframe',{'class':'youtubeframe'})
+                videos = target_div.find_all('iframe', {'class': 'youtubeframe'})
                 for tag in videos:
                     video = 'https://www.youtube.com/watch?v=' + tag.get('src').split('/')[-1]
                     self.update_attribute('videos', video)
@@ -202,16 +202,16 @@ if __name__ == '__main__':
 
     def print_attr(instance):
         print('-'*100)
-        print('{:50.50}{}'.format('attribute name','value'))
+        print('{:50.50}{}'.format('attribute name', 'value'))
         print('-'*100)
         for k, v in instance.__dict__.items():
-            print('{:50.50}{}'.format(k,v))
+            print('{:50.50}{}'.format(k, v))
 
     url1 = 'http://dancesport.ru/partners/partners_9324.html'
     url2 = 'http://dancesport.ru/partners/partners_9102.html'
     url3 = 'http://dancesport.ru/partners/partners_9472.html'
-    provider = ProviderDancesportRu(url3,'dumbdatestring')
-    privider2 = ProviderDancesportRu(url2,'dumbdatestring')
+    provider = ProviderDancesportRu(url3, 'dumbdatestring')
+    privider2 = ProviderDancesportRu(url2, 'dumbdatestring')
 
     a = {provider}
 

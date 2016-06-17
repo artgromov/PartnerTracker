@@ -26,7 +26,7 @@ class Partner:
     def __init__(self):
         self.id = uuid.uuid4()
         self.state = Partner.NEW
-        self.providers = set()
+        self.providers = []
         self.conflicts = dict()
 
         self.name = None
@@ -47,8 +47,8 @@ class Partner:
         self.goal = None
         self.expectations = None
         self.competition_last_date = None
-        self.images = set()
-        self.videos = set()
+        self.images = []
+        self.videos = []
 
         self.change_org = None
         self.change_club = None
@@ -64,6 +64,12 @@ class Partner:
     def __repr__(self):
         return 'Partner<{state:25} {name:20} {class_st:1} {class_la:1} {description:27.27}>'.format(**self.__dict__)
 
+    def __str__(self):
+        string = ''
+        for key in sorted(self.__dict__.keys()):
+            string += '%s: %s\n' % (key, self.__dict__[key])
+        return string.rstrip()
+
     def __eq__(self, other):
         return self.id == other.id
 
@@ -71,8 +77,9 @@ class Partner:
         return hash(self.id)
 
     def add_provider(self, provider):
-        logger.debug('attaching new provider: "%s"' % provider.id)
-        self.providers.add(provider)
+        if provider not in self.providers:
+            logger.debug('attaching new provider: "%s"' % provider.id)
+            self.providers.append(provider)
 
     def update_attribute(self, name, new_value, forced=False):
         if new_value:
@@ -87,16 +94,19 @@ class Partner:
                     self.__dict__[name] = new_value
                     return 1
 
-                elif isinstance(old_value, set):
+                elif isinstance(old_value, list):
                     logger.debug('updating attribute: "%s" with value: "%s"' % (name, new_value))
-                    self.__dict__[name].update(set(new_value))
+                    self.__dict__[name] = list(set(old_value + new_value))
                     return 1
 
                 elif old_value != new_value:
                     logger.debug('conflict found for attribute: "%s"' % name)
                     if name not in self.conflicts:
-                        self.conflicts[name] = set(old_value)
-                    self.conflicts[name].add(new_value)
+                        self.conflicts[name] = [old_value]
+
+                    if new_value not in self.conflicts[name]:
+                        self.conflicts[name].append(new_value)
+
                     return 0
 
             else:

@@ -8,9 +8,9 @@ logger = logging.getLogger(__name__)
 
 class Driver:
     def __init__(self):
-        self.searchers = set()
-        self.providers = set()
-        self.partners = set()
+        self.searchers = []
+        self.providers = []
+        self.partners = []
 
     def save(self, filename='driver.p'):
         logger.info('saving state to file %s' % filename)
@@ -19,13 +19,14 @@ class Driver:
 
     def load(self, filename='driver.p'):
         logger.info('loading state from file %s' % filename)
-        with open(filename,'rb') as file:
+        with open(filename, 'rb') as file:
             loaded_obj = pickle.load(file)
         self.__dict__ = loaded_obj.__dict__
 
     def add_searcher(self, searcher):
-        logger.info('attaching new searcher')
-        self.searchers.add(searcher)
+        if searcher not in self.searchers:
+            logger.info('attaching new searcher')
+            self.searchers.append(searcher)
 
     def search(self):
         logger.info('starting search')
@@ -37,12 +38,12 @@ class Driver:
                 for provider in new_providers:
                     if provider not in self.providers:
                         logger.debug('adding new provider')
-                        self.providers.add(provider)
+                        self.providers.append(provider)
 
                         partner = Partner()
                         partner.add_provider(provider)
                         logger.debug('adding new partner')
-                        self.partners.add(partner)
+                        self.partners.append(partner)
                         found += 1
 
         else:
@@ -62,6 +63,3 @@ class Driver:
 
         logger.info('partners updated: %s, with conflicts: %s' % (updated, conflicts))
         return updated, conflicts
-
-
-
