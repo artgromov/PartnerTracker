@@ -1,6 +1,6 @@
 import logging
-from partner_tracker.searchers import SearcherDancesportRu
-from partner_tracker.providers import ProviderDancesportRu
+import pickle
+
 from partner_tracker.partner import Partner
 
 logger = logging.getLogger(__name__)
@@ -8,28 +8,46 @@ logger = logging.getLogger(__name__)
 
 class Driver:
     def __init__(self):
-        logger.debug('creating new driver object')
+        logger.debug('creating new %s object' % self.__class__.__name__)
 
         self.searchers = []
         self.providers = []
         self.partners = []
 
+    def save(self, filename='driver.p'):
+        logger.debug('saving state to file %s' % filename)
+        with open(filename, 'wb') as file:
+            pickle.dump(self, file)
+
+    def load(self, filename='driver.p'):
+        logger.debug('loading state from file %s' % filename)
+        with open(filename,'rb') as file:
+            loaded_obj = pickle.load(file)
+        self.__dict__ = loaded_obj.__dict__
+
+    def add_searcher(self, searcher):
+        if searcher not in self.searchers:
+            logger.debug('adding new searcher')
+            self.searchers.append(searcher)
+        else:
+            logger.info('searcher is already added')
+
     def search(self):
-        logging.debug('starting search')
+        logger.debug('starting search')
+        if len(self.searchers) > 0:
+            for searcher in self.searchers:
+                new_providers = searcher.search()
 
-        for searcher in self.searchers:
-            new_providers = searcher.search()
+                for provider in new_providers:
+                    if provider not in self.providers:
+                        logger.debug('adding new provider with id: "%s"' % provider.id)
+                        self.providers.append(provider)
 
-            for new_provider in new_providers:
-                if new_provider not in self.providers:
-                    new_provider.update()
-                    new_partner = Partner()
-                    new_partner.providers.append(new_provider)
-
-                    self.providers.append(new_provider)
-                    self.partners.append(new_partner)
+        else:
+            logger.info('no searchers attached')
 
     def update(self):
+        logger.debug('starting update')
         for provider in self.providers:
             provider.update()
 
@@ -67,5 +85,3 @@ class Driver:
 
     def edit(self, partner_id):
         partner = self.get_partner_by_id(partner_id)
-
-        # edit attributes

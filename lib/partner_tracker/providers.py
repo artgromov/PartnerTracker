@@ -1,12 +1,14 @@
-from abc import *
 import logging
+from abc import *
 import requests
 from bs4 import BeautifulSoup
 
+logger = logging.getLogger(__name__)
 
-class Provider(metaclass = ABCMeta):
+
+class Provider(metaclass=ABCMeta):
     def __init__(self):
-        self.log = logging.getLogger(__name__)
+        logger.debug('creating new %s object' % self.__class__.__name__)
         self.id = None
 
         # updating process state vars
@@ -26,28 +28,27 @@ class Provider(metaclass = ABCMeta):
         self.changed = set()
         self.commited = True
 
-    def update_attribute(self, name, new):
-        self.log.debug('trying to update "{}" with: "{}" '.format(name, new))
+    def get_changes(self):
+        return {key: self.__dict__[key] for key in self.changed}
 
-        if new:
-            old = self.__getattribute__(name)
+    def update_attribute(self, name, new_value):
+        if new_value:
+            old_value = self.__getattribute__(name)
 
-            if isinstance(old, set):
-                if new not in old:
-                    old.add(new)
+            if isinstance(old_value, set):
+                if new_value not in old_value:
+                    logger.debug('updating attribute: "%s" with value: "%s" ' % (name, new_value))
+                    old_value.add(new_value)
                     self.changed.add(name)
 
             else:
-                if old != new:
-                    self.__setattr__(name, new)
+                if old_value != new_value:
+                    logger.debug('updating attribute: "%s" with value: "%s" ' % (name, new_value))
+                    self.__setattr__(name, new_value)
                     self.changed.add(name)
 
     @abstractmethod
     def update(self):
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_changes(self):
         raise NotImplementedError
 
 
@@ -72,14 +73,18 @@ class ProviderDancesportRu(Provider):
         self.class_la = None
         self.club = None
 
-    def get_changes(self):
-        return {key: self.__dict__[key] for key in self.changed}
+    def __repr__(self):
+        return 'ProviderDancesportRu(%s, %s)' %(self.id, self.date)
 
+    def __str__(self):
+        string = ''
+        for key in sorted(self.__dict__.keys()):
+            string += '%s: %s\n' % (key, self.__dict__[key])
+        return string.rstrip()
 
     def update(self):
-
         page = requests.get(self.id)
-        self.log.debug('responce code "{}"'.format(page.status_code))
+        logger.debug('updating status code "%s"' % page.status_code)
         if page.status_code == 200:
             soup = BeautifulSoup(page.text, "html.parser")
 
@@ -179,13 +184,12 @@ class ProviderDancesportRu(Provider):
                         continue
 
         else:
-            self.log.error('cannot load page "{}"'.format(self.id))
+            logger.error('updating status code "%s"' % page.status_code)
 
         if len(self.changed) > 0:
             self.commited = False
 
         return self.changed
-
 
 
 if __name__ == '__main__':
@@ -205,9 +209,9 @@ if __name__ == '__main__':
     url2 = 'http://dancesport.ru/partners/partners_9102.html'
     url3 = 'http://dancesport.ru/partners/partners_9472.html'
     provider = ProviderDancesportRu(url3,'dumbdatestring')
+    privider2 = ProviderDancesportRu(url2,'dumbdatestring')
 
     a = {provider}
-
 
     print_attr(provider)
     sleep(1)
@@ -216,3 +220,4 @@ if __name__ == '__main__':
     print_attr(provider)
 
     print(provider in a)
+    print(privider2 in a)

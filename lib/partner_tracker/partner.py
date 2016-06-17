@@ -63,7 +63,7 @@ class Partner:
         self.notes = []
 
     def __repr__(self):
-        return '<{state:25} {name:20} {class_st:1} {class_la:1} {description:27.27}>'.format(**self.__dict__)
+        return 'Partner<{state:25} {name:20} {class_st:1} {class_la:1} {description:27.27}>'.format(**self.__dict__)
 
     def set_schedule(self, spec):
         match = _schedule_pattern.search(spec)
