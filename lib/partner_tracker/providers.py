@@ -174,11 +174,6 @@ class ProviderDancesportRu:
         else:
             logger.error('updating status code "%s"' % page.status_code)
 
-        if len(self.changes) > 0:
-            return 1
-        else:
-            return 0
-
     def get_changes(self):
         changes = dict()
         for key_provider in self.changes:
