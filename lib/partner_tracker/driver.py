@@ -12,12 +12,12 @@ class Driver:
         self.providers = []
         self.partners = []
 
-    def save(self, filename='driver.p'):
+    def save(self, filename):
         logger.info('saving state to file %s' % filename)
         with open(filename, 'wb') as file:
             pickle.dump(self, file)
 
-    def load(self, filename='driver.p'):
+    def load(self, filename):
         logger.info('loading state from file %s' % filename)
         with open(filename, 'rb') as file:
             loaded_obj = pickle.load(file)

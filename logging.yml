@@ -4,15 +4,17 @@ root:
   level: DEBUG
 
 loggers:
-  __main__:
+  partner_tracker:
+    level: DEBUG
+  partner_tracker.cli:
     level: DEBUG
   partner_tracker.driver:
     level: DEBUG
-  partner_tracker.searchers:
+  partner_tracker.partner:
     level: DEBUG
   partner_tracker.providers:
     level: DEBUG
-  partner_tracker.partner:
+  partner_tracker.searchers:
     level: DEBUG
 
 handlers:
@@ -20,7 +22,7 @@ handlers:
     class: logging.StreamHandler
     formatter: default
     level:
-    stream: ext://sys.stderr
+    stream: ext://sys.stdout
 
 formatters:
   default:

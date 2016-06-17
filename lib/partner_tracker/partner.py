@@ -87,7 +87,7 @@ class Partner:
         self.notes = []
 
     def __repr__(self):
-        return 'Partner<{state:25} {name:20} {class_st:1} {class_la:1} {description:27.27}>'.format(**self.__dict__)
+        return 'Partner<{} {} {} {} {}>'.format(repr(self.state), str(self.class_st), str(self.class_la), str(self.name), str(self.description))
 
     def __str__(self):
         string = ''
