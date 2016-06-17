@@ -24,11 +24,10 @@ class Partner:
                            }
 
     def __init__(self):
-        logger.debug('creating new partner object')
-
         self.id = uuid.uuid4()
         self.state = Partner.NEW
-        self.providers = []
+        self.providers = set()
+        self.conflicts = dict()
 
         self.name = None
         self.phone = None
@@ -48,8 +47,8 @@ class Partner:
         self.goal = None
         self.expectations = None
         self.competition_last_date = None
-        self.images = []
-        self.videos = []
+        self.images = set()
+        self.videos = set()
 
         self.change_org = None
         self.change_club = None
@@ -65,45 +64,59 @@ class Partner:
     def __repr__(self):
         return 'Partner<{state:25} {name:20} {class_st:1} {class_la:1} {description:27.27}>'.format(**self.__dict__)
 
-    def set_schedule(self, spec):
-        match = _schedule_pattern.search(spec)
-        changed = False
-        if match:
-            rate = match.group('rate')
-            num = match.group('num')
-            interval = self._schedule_intervals[match.group('interval')]
+    def __eq__(self, other):
+        return self.id == other.id
 
-            if num:
-                if int(num) > 1:
-                    interval = interval + 's'
-                schedule = '{} per {} {}'.format(rate, num, interval)
+    def __hash__(self):
+        return hash(self.id)
+
+    def add_provider(self, provider):
+        logger.debug('attaching new provider: "%s"' % provider.id)
+        self.providers.add(provider)
+
+    def update_attribute(self, name, new_value, forced=False):
+        if new_value:
+            old_value = self.__dict__[name]
+
+            if old_value == new_value:
+                return 0
+
+            if not forced:
+                if not old_value:
+                    logger.debug('updating attribute: "%s" with value: "%s"' % (name, new_value))
+                    self.__dict__[name] = new_value
+                    return 1
+
+                elif isinstance(old_value, set):
+                    logger.debug('updating attribute: "%s" with value: "%s"' % (name, new_value))
+                    self.__dict__[name].update(set(new_value))
+                    return 1
+
+                elif old_value != new_value:
+                    logger.debug('conflict found for attribute: "%s"' % name)
+                    if name not in self.conflicts:
+                        self.conflicts[name] = set(old_value)
+                    self.conflicts[name].add(new_value)
+                    return 0
 
             else:
-                schedule = '{} per {}'.format(rate, interval)
+                logger.debug('forced updating attribute: "%s" with value: "%s"' % (name, new_value))
+                self.__dict__[name] = new_value
+                return 1
 
-            changed = True
+    def update(self):
+        changed = 0
+        for provider in self.providers:
+            local_counter = 0
+            provider.update()
+            new_data = provider.get_changes()
+            if new_data:
+                for name, new_value in new_data.items():
+                    local_counter += self.update_attribute(name, new_value)
 
+            provider.reset_changes()
+            if local_counter > 0:
+                changed = 1
         return changed
 
-    def diff(self, other):
-        diff = {}
-        for key in self.__dict__.keys():
-            if key != log:
-                self_attr = self.__dict__[key]
-                other_attr = other.__dict__[key]
-                if self_attr != other_attr:
-                    diff[key] = (self_attr, other_attr)
 
-        return diff
-
-    def merge_dict(self, data):
-        changed = False
-        for key in self.__dict__.keys():
-            try:
-                if self.__dict__[key] != data[key]:
-                    self.data[key] = data[key]
-                    changed = True
-            except KeyError:
-                pass
-
-        return changed

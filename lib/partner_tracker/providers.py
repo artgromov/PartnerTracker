@@ -1,62 +1,28 @@
 import logging
-from abc import *
 import requests
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
 
-class Provider(metaclass=ABCMeta):
-    def __init__(self):
-        logger.debug('creating new %s object' % self.__class__.__name__)
-        self.id = None
-
-        # updating process state vars
-        self.changed = set()
-        self.commited = True
-
-    def __eq__(self, other):
-        if self.id == other.id:
-            return True
-        else:
-            return False
-
-    def __hash__(self):
-        return hash(self.id)
-
-    def commit(self):
-        self.changed = set()
-        self.commited = True
-
-    def get_changes(self):
-        return {key: self.__dict__[key] for key in self.changed}
-
-    def update_attribute(self, name, new_value):
-        if new_value:
-            old_value = self.__getattribute__(name)
-
-            if isinstance(old_value, set):
-                if new_value not in old_value:
-                    logger.debug('updating attribute: "%s" with value: "%s" ' % (name, new_value))
-                    old_value.add(new_value)
-                    self.changed.add(name)
-
-            else:
-                if old_value != new_value:
-                    logger.debug('updating attribute: "%s" with value: "%s" ' % (name, new_value))
-                    self.__setattr__(name, new_value)
-                    self.changed.add(name)
-
-    @abstractmethod
-    def update(self):
-        raise NotImplementedError
-
-
-class ProviderDancesportRu(Provider):
+class ProviderDancesportRu:
     base_url = 'http://dancesport.ru'
+    mapping = {'name': 'name',
+               'images': 'images',
+               'videos': 'videos',
+               'description': 'description',
+               'birth': 'birth',
+               'city': 'city',
+               'country': 'country',
+               'height': 'height',
+               'class_st': 'class_st',
+               'class_la': 'class_la',
+               'club': 'club'
+               }
 
     def __init__(self, url, date):
-        Provider.__init__(self)
+        self.changes = set()
+
         self.id = url
         self.date = date
 
@@ -73,6 +39,12 @@ class ProviderDancesportRu(Provider):
         self.class_la = None
         self.club = None
 
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
+
     def __repr__(self):
         return 'ProviderDancesportRu(%s, %s)' %(self.id, self.date)
 
@@ -81,6 +53,22 @@ class ProviderDancesportRu(Provider):
         for key in sorted(self.__dict__.keys()):
             string += '%s: %s\n' % (key, self.__dict__[key])
         return string.rstrip()
+
+    def update_attribute(self, name, new_value):
+        if new_value:
+            old_value = self.__dict__[name]
+
+            if isinstance(old_value, set):
+                if new_value not in old_value:
+                    logger.debug('updating attribute: "%s" with value: "%s" ' % (name, new_value))
+                    old_value.add(new_value)
+                    self.changes.add(name)
+
+            else:
+                if old_value != new_value:
+                    logger.debug('updating attribute: "%s" with value: "%s" ' % (name, new_value))
+                    self.__setattr__(name, new_value)
+                    self.changes.add(name)
 
     def update(self):
         page = requests.get(self.id)
@@ -186,15 +174,29 @@ class ProviderDancesportRu(Provider):
         else:
             logger.error('updating status code "%s"' % page.status_code)
 
-        if len(self.changed) > 0:
-            self.commited = False
+        if len(self.changes) > 0:
+            return 1
+        else:
+            return 0
 
-        return self.changed
+    def get_changes(self):
+        changes = dict()
+        for key_provider in self.changes:
+            try:
+                key_partner = self.mapping[key_provider]
+            except KeyError:
+                continue
+
+            changes[key_partner] = self.__dict__[key_provider]
+
+        return changes
+
+    def reset_changes(self):
+        self.changes = set()
 
 
 if __name__ == '__main__':
     from time import sleep
-    from copy import deepcopy
 
     logging.basicConfig(level=logging.DEBUG)
 

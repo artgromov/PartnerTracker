@@ -1,5 +1,4 @@
 import logging
-from abc import *
 import requests
 from bs4 import BeautifulSoup
 
@@ -8,21 +7,11 @@ from partner_tracker.providers import ProviderDancesportRu
 logger = logging.getLogger(__name__)
 
 
-class Searcher(metaclass = ABCMeta):
-    def __init__(self):
-        logger.debug('creating new %s object' % self.__class__.__name__)
-
-    @abstractmethod
-    def search(self):
-        raise NotImplementedError
-
-
-class SearcherDancesportRu(Searcher):
+class SearcherDancesportRu:
     base_url = 'http://dancesport.ru'
     query_url = '/partners/?edit=1&sessionsrch=1&country=219&sex=2&city=17849&age_to=1989&age_from=1996&len_from=165&len_to=177&PClass_2[0]=A&PClass_2[1]=S'
 
     def __init__(self):
-        Searcher.__init__(self)
         self.search_url = self.base_url + self.query_url
 
     def search(self):
