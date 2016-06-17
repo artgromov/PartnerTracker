@@ -1,0 +1,27 @@
+version: 1
+root:
+  handlers: [console]
+  level: DEBUG
+
+loggers:
+  __main__:
+    level: DEBUG
+  partner_tracker.driver:
+    level: DEBUG
+  partner_tracker.searchers:
+    level: DEBUG
+  partner_tracker.providers:
+    level: DEBUG
+  partner_tracker.partner:
+    level: DEBUG
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: default
+    level:
+    stream: ext://sys.stderr
+
+formatters:
+  default:
+    format: '%(name)s: %(levelname)s: %(message)s'

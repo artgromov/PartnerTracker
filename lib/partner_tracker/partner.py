@@ -2,18 +2,20 @@ import logging
 import uuid
 import re
 
+logger = logging.getLogger(__name__)
+
 
 class Partner:
-    NEW     = 'Created'
-    UPD     = 'First time updated'
-    ACK     = 'First contact attempt'
-    WAIT    = 'Awaiting additional info'
-    PTEST   = 'Primary testing scheduled'
-    ATEST   = 'Advanced testing'
-    IGN     = 'Ignored'
-    NOAN    = 'Still no answer'
-    NA      = 'Source not found'
-    DEL     = 'Should be deleted'
+    NEW = 'Created'
+    UPD = 'First time updated'
+    ACK = 'First contact attempt'
+    WAIT = 'Awaiting additional info'
+    PTEST = 'Primary testing scheduled'
+    ATEST = 'Advanced testing'
+    IGN = 'Ignored'
+    NOAN = 'Still no answer'
+    NA = 'Source not found'
+    DEL = 'Should be deleted'
 
     _schedule_pattern = re.compile('^(?P<rate>[0-9])p(?P<num>[0-9]?)(?P<interval>[wmy])')
     _schedule_intervals = {'w': 'week',
@@ -21,8 +23,9 @@ class Partner:
                            'y': 'year'
                            }
 
-
     def __init__(self):
+        logger.debug('creating new partner object')
+
         self.id = uuid.uuid4()
         self.state = Partner.NEW
         self.providers = []
@@ -59,10 +62,8 @@ class Partner:
 
         self.notes = []
 
-
     def __repr__(self):
         return '<{state:25} {name:20} {class_st:1} {class_la:1} {description:27.27}>'.format(**self.__dict__)
-
 
     def set_schedule(self, spec):
         match = _schedule_pattern.search(spec)
@@ -106,9 +107,3 @@ class Partner:
                 pass
 
         return changed
-
-
-
-if __name__ == '__main__':
-    a = Partner()
-    print(a.__dict__)

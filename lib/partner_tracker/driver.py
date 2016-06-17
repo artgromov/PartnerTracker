@@ -1,17 +1,22 @@
-from searchers import SearcherDancesportRu
-from providers import ProviderDancesportRu
-from partner import Partner
+import logging
+from partner_tracker.searchers import SearcherDancesportRu
+from partner_tracker.providers import ProviderDancesportRu
+from partner_tracker.partner import Partner
+
+logger = logging.getLogger(__name__)
 
 
 class Driver:
     def __init__(self):
-        self.log = logging.getLogger(__name__)
+        logger.debug('creating new driver object')
 
         self.searchers = []
         self.providers = []
         self.partners = []
 
     def search(self):
+        logging.debug('starting search')
+
         for searcher in self.searchers:
             new_providers = searcher.search()
 
@@ -23,7 +28,6 @@ class Driver:
 
                     self.providers.append(new_provider)
                     self.partners.append(new_partner)
-
 
     def update(self):
         for provider in self.providers:
@@ -56,15 +60,12 @@ class Driver:
 
                     provider.commit()
 
-
     def get_partner_by_id(self, partner_id):
         for partner in self.partners:
             if partner.id == partner_id:
                 return partner
 
-
     def edit(self, partner_id):
-        partner = get_partner_by_id(partner_id)
+        partner = self.get_partner_by_id(partner_id)
 
         # edit attributes
-
