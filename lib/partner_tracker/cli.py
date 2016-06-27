@@ -3,108 +3,106 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class Mode:
-    def __init__(self, prompt, root=False):
-        self.prompt = prompt
-        self.root = root
+def command(description=None, command=None, arghelp=None, fullhelp=None, number=None):
+    def decorate(func):
+        new_command = Command(description, command, arghelp, fullhelp, number, func)
+        return new_command
+    return decorate
 
-        self.help_command_width = None
-        self.help_argument_width = None
-        self.help_description_help = 'Display this message'
-        if root:
-            self.help_description_exit = 'Exit from the program.'
+
+class Command:
+    number = 0
+    number_used = set()
+
+    def __new__(cls, description, command, arghelp, fullhelp, number, func):
+        instance = super().__new__(cls)
+        if number is None:
+            num = cls.number
+            cls.number += 1
         else:
-            self.help_description_exit = 'Exit from current mode.'
+            num = int(number)
 
-        self.namespace = []
-
-    def add_command(self, command, callback, index=None):
-        """
-        Appends (command, callback) tuple to mode namespace.
-        If index given an integer, uses insert instead of append.
-        Replaces callback in case of command match.
-
-        Callback should support only one string argument.
-        Command help uses callback's docstring, argument help uses annotations without any modifications.
-        """
-
-        commands = (i[0] for i in self.namespace)
-        if command not in commands:
-            if isinstance(index, int):
-                self.namespace.insert(index, (command, callback))
-            else:
-                self.namespace.append((command, callback))
-        else:
-            index = self.remove_command(command)
-            self.namespace.insert(index, (command, callback))
-
-    def remove_command(self, command):
-        try:
-            index, callback = self.lookup_command(command)
-        except KeyError:
-            logger.error('no such command: %s' % command)
-        else:
-            self.namespace.pop(index)
-            return index
-
-    def __call__(self):
         while True:
-            command, argument = self.get_user_input()
+            if num in cls.number_used:
+                num += 1
+            else:
+                break
+
+        instance.number = num
+        cls.number_used.add(num)
+        return instance
+
+    def __init__(self, description, command, arghelp, fullhelp, number, func):
+        self.description = description
+        self.command = command
+        self.arghelp = arghelp
+        self.fullhelp = description
+        self.func = func
+
+        if not command:
+            self.command = func.__name__
+
+        if not arghelp:
+            self.arghelp = 'add from annotations'
+
+        if not fullhelp:
+            self.fullhelp = func.__doc__
+
+    def __call__(self, *args, **kwargs):
+        return self.func(*args, **kwargs)
+
+    def __repr__(self):
+        return 'Command(%s)' % self.command
+
+
+class Mode:
+    def __call__(self):
+        self.namespace = []
+        self.build_namespace(self.__class__)
+
+        while True:
+            command_input, argument_input = self.get_user_input()
             try:
-                index, callback = self.lookup_command(command)
-                logger.debug('calling %s callback' % callback)
-                callback(argument)
-            except KeyError:    # no user callback found, call internal commands
-                if command == 'help':
-                    self.print_usage()
-                elif command == 'exit':
-                    break
-                else:
-                    print('Unrecognized command: %s' % command)
+                command = self.lookup_command(command_input)
+                logger.debug('calling %s(%s)' % (command.command, argument_input))
+                command(self, argument_input)
+            except KeyError:
+                print('Unknown command %s' % command_input)
+            except StopIteration:
+                break
+
+    def __repr__(self):
+        return '%s(%s)' % (type(self).__name__, self.name)
+
+    def __str__(self):
+        return type(self).__name__
+
+    def build_namespace(self, cls):
+        for key, value in cls.__dict__.items():
+            if isinstance(value, Command):
+                self.namespace.append(value)
+
+        for base in cls.__bases__:
+            self.build_namespace(base)
 
     def get_user_input(self):
-        user_input = input(self.prompt).strip()
+        prompt = '%s%s: ' % (self.__dict__.get('name', 'default_name'), self.__dict__.get('context', '<default_context>'))
+        user_input = input(prompt).strip()
         command = user_input.split(' ')[0]
         argument = ' '.join(user_input.split(' ')[1:])
-        logger.debug('got command: "{}", argument: "{}"'.format(command, argument))
         return command, argument
 
-    def lookup_command(self, command_name):
-        for index, (command, callback) in enumerate(self.namespace):
-            if command == command_name:
-                return index, callback
+    def lookup_command(self, command_input):
+        for command in self.namespace:
+            if command.command == command_input:
+                return command
         raise KeyError
 
-    def print_usage(self):
-        command_width = 4
-        argument_width = len(self.help_description_exit)
-        lines = []
-        for command, callback in self.namespace:
-            if command_width < len(command):
-                command_width = len(command)
+    @command('Print this message', number=998)
+    def help(self, argument_input):
+        for i in sorted(self.namespace, key=lambda x: x.number):
+            print(i.number, i.command)
 
-            if callback.__annotations__:
-                argument = '[' + list(callback.__annotations__.values())[0] + ']'
-                if argument_width < len(argument):
-                    argument_width = len(argument)
-            else:
-                argument = ''
-
-            if callback.__doc__:
-                description = callback.__doc__.replace('\n', ' ')
-            else:
-                description = ''
-
-            lines.append((command, argument, description))
-
-        logger.debug('calculated command width: %s, argument width: %s' % (command_width, argument_width))
-        usage = 'Available commands:'
-        for command, argument, description in lines:
-            usage += '\n    {}    {}    {}'.format(command.ljust(command_width), argument.ljust(argument_width), description)
-
-        usage += '\n'
-        usage += '\n    {}    {}    {}'.format('help'.ljust(command_width), ''.ljust(argument_width), self.help_description_help)
-        usage += '\n    {}    {}    {}'.format('exit'.ljust(command_width), ''.ljust(argument_width), self.help_description_exit)
-        usage += '\n'
-
-        print(usage)
+    @command(number='999')
+    def exit(self, argument_input):
+        raise StopIteration

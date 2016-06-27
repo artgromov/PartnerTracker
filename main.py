@@ -4,73 +4,52 @@ import sys
 from partner_tracker import setup_logging
 from partner_tracker.driver import Driver
 from partner_tracker.searchers import SearcherDancesportRu
-from partner_tracker.cli import Mode
+from partner_tracker.cli import Mode, command
 
 setup_logging()
 logger = logging.getLogger('partner_tracker')
 
 
-def callback_load(filename: 'filename' = 'data.p'):
-    """Load data file from disk"""
-    driver.load(filename)
+class ModeMain(Mode):
+    @command('Load data file from disk')
+    def load(self, filename: 'filename' = 'data.p'):
+        driver.load(filename)
 
+    @command('Save data file to disk')
+    def save(self, filename: 'filename' = 'data.p'):
+        driver.save(filename)
 
-def callback_save(filename: 'filename' = 'data.p'):
-    """Save data file to disk"""
-    driver.save(filename)
+    @command('Search for new partners')
+    def search(self, string):
+        found = driver.search()
+        print('Found %s new partners' % found)
 
+    @command('Update existing partners')
+    def update(self, string):
+        updated, conflicts = driver.update()
+        print('Updated: %s, with conflicts: %s' % (updated, conflicts))
 
-def callback_search(string):
-    """Search for new partners"""
-    found = driver.search()
-    print('Found %s new partners' % found)
+    @command('Create new partner')
+    def create(self, string):
+        logger.error('create is not implemented')
 
+    @command('Modify selected partner')
+    def modify(self, partner: 'number'):
+        logger.error('modify is not implemented')
 
-def callback_update(string):
-    """Update existing partners"""
-    updated, conflicts = driver.update()
-    print('Updated: %s, with conflicts: %s' % (updated, conflicts))
+    @command('List all partners with selected state')
+    def list(self, string: 'state list'):
+        for partner in driver.partners:
+            print(partner)
 
+    @command('Go to selected partner sub-mode')
+    def open(self, index: 'number'):
+        """Go to selected partner's sub-mode"""
+        logger.error('open is not implemented')
 
-def callback_create(string):
-    """Create new partner"""
-    logger.error('create is not implemented')
-
-
-def callback_modify(partner: 'number'):
-    """Modify selected partner"""
-    logger.error('modify is not implemented')
-
-
-def callback_list(string: 'state list'):
-    """List all partners with selected state"""
-    for partner in driver.partners:
-        print(partner)
-
-
-def callback_open(index: 'number'):
-    """Go to selected partner's sub-mode"""
-    logger.error('open is not implemented')
-    mode_partner = Mode('main/partner(%s): ' % index)
-
-    try:
-        partner = driver.partners[index]
-    except TypeError:
-        logger.error('wrong argument: %s' % partner)
-    except IndexError:
-        logger.error('wrong partner number: %s' % partner)
-    else:
-        mode_partner.partner = partner
-
-
-def callback_import(filename: 'filename'):
-    """Import old database format"""
-    logger.error('import is not implemented')
-
-
-def callback_partner_modify(partner, attr_name, value):
-    """Modify attribute"""
-    logger.error('not implemented')
+    @command('Import old database format')
+    def importdb(self, filename: 'filename'):
+        logger.error('import is not implemented')
 
 
 if __name__ == '__main__':
@@ -79,17 +58,6 @@ if __name__ == '__main__':
     searcher = SearcherDancesportRu()
     driver.add_searcher(searcher)
 
-    mode_main = Mode('main: ', root=True)
-    mode_main.add_command('load', callback_load)
-    mode_main.add_command('save', callback_save)
-    mode_main.add_command('search', callback_search)
-    mode_main.add_command('update', callback_update)
-    mode_main.add_command('create', callback_create)
-    mode_main.add_command('modify', callback_modify)
-    mode_main.add_command('list', callback_list)
-    mode_main.add_command('open', callback_open)
-    mode_main.add_command('import', callback_import)
+    t = ModeMain()
+    t()
 
-    mode_main()
-
-    sys.exit(0)
