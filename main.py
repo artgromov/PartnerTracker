@@ -4,7 +4,7 @@ import sys
 from partner_tracker import setup_logging
 from partner_tracker.driver import Driver
 from partner_tracker.searchers import SearcherDancesportRu
-from partner_tracker.cli import Mode, Command, ArgumentParser
+from cli.blocks import Mode, Command
 
 setup_logging()
 logger = logging.getLogger('partner_tracker')
