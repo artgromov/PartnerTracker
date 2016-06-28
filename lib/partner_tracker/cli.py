@@ -76,7 +76,8 @@ class Commandlet:
 
     @property
     def short_help(self):
-        return '\t%s    %s    %s' % (self.command.ljust(self.command_width), self.arguments_string.ljust(self.arguments_width), self.description)
+        return '\t%s    %s    %s' % (self.command.ljust(self.command_width),
+                                     self.arguments_string.ljust(self.arguments_width), self.description)
 
     @property
     def long_help(self):
@@ -135,18 +136,15 @@ class Mode:
         self.build_namespace()
 
         while True:
-            command_input, argument_input = self.get_user_input()
+            command_name, arguments = self.get_user_input()
             try:
-                command = self.lookup_command(command_input)
-                if argument_input:
-                    logger.debug('calling %s(%s)' % (command.command, argument_input))
-                    command(self, argument_input)
-                else:
-                    logger.debug('calling %s()' % command.command)
-                    command(self)
-
+                command = self.lookup_command(command_name)
+                logger.debug('calling %s(%s)' % (command.command, ', '.join(arguments)))
+                command(self, *arguments)
             except KeyError:
-                print('Unknown command %s' % command_input)
+                print('Unknown command: %s' % command_name)
+            except TypeError:
+                print('Wrong arguments given: %s' % ', '.join(arguments))
             except StopIteration:
                 break
 
@@ -167,16 +165,20 @@ class Mode:
                 get_commandlets(base)
 
         get_commandlets(self.__class__)
+
         self.namespace = namespace
 
     def get_user_input(self):
         name = self.__dict__.get('name', 'default_name')
         context = self.__dict__.get('context', '<default_context>')
         prompt = '%s%s: ' % (name, context)
+
         user_input = input(prompt).strip()
-        command_input = user_input.split(' ')[0]
-        argument_input = ' '.join(user_input.split(' ')[1:])
-        return command_input, argument_input
+        command_name = user_input.split(' ')[0]
+        arguments_string = ' '.join(user_input.split(' ')[1:])
+        arguments = ArgumentParser()(arguments_string)
+
+        return command_name, arguments
 
     def lookup_command(self, command_input):
         for command in self.namespace:
@@ -202,7 +204,7 @@ class Mode:
             try:
                 command = self.lookup_command(command_name)
             except KeyError:
-                print('Unknown command %s' % command_name)
+                print('Unknown command: %s' % command_name)
             else:
                 print(command.long_help)
             print()
@@ -210,3 +212,61 @@ class Mode:
     @Command(number='999')
     def exit(self):
         raise StopIteration
+
+
+class ArgumentParser:
+    def __init__(self):
+        self.tokens = ' "\'\n'
+        self.curr_token = None
+        self.prev_token = None
+        self.buffer = ''
+
+        self.arguments = []
+
+        self.quote = None
+
+    def __call__(self, argument_string):
+        logger.log(5, 'start parsing arguments (%s)' % argument_string)
+        for symbol in argument_string.strip():
+            logger.log(5, 'symbol (%s)' % symbol)
+            if self.quote:
+                if symbol == self.quote:
+                    self.process_token(symbol)
+                else:
+                    self.buffer += symbol
+            elif symbol in self.tokens:
+                self.process_token(symbol)
+            else:
+                self.buffer += symbol
+
+        self.process_token('\n')
+        logger.log(5, 'end parsing arguments')
+        return tuple(self.arguments)
+
+    def change_token(self, new_token):
+        if new_token == '\n':
+            token = '\\n'
+        else:
+            token = new_token
+        logger.log(5, 'changing token from (%s) to (%s)' % (self.curr_token, token))
+
+        self.prev_token = self.curr_token
+        self.curr_token = new_token
+
+    def flush_buffer(self):
+        buffer = self.buffer
+        logger.log(5, 'got (%s), flushing buffer' % buffer)
+        self.buffer = ''
+        return buffer
+
+    def process_token(self, symbol):
+        self.change_token(symbol)
+
+        if self.curr_token in ' \n':
+            self.arguments.append(self.flush_buffer())
+
+        elif self.curr_token in '"\'':
+            if self.quote is None:
+                self.quote = self.curr_token
+            else:
+                self.quote = None

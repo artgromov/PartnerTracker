@@ -4,33 +4,39 @@ import sys
 from partner_tracker import setup_logging
 from partner_tracker.driver import Driver
 from partner_tracker.searchers import SearcherDancesportRu
-from partner_tracker.cli import Mode, Command
+from partner_tracker.cli import Mode, Command, ArgumentParser
 
 setup_logging()
 logger = logging.getLogger('partner_tracker')
 
 
-class ModeMain(Mode):
+class MainMode(Mode):
     def __init__(self):
         self.name = 'main'
         self.context = ''
 
+        self.driver = Driver()
+        self.driver.add_searcher(SearcherDancesportRu())
+
     @Command('Load data from disk')
     def load(self, filename: 'File name to load from disk'='data.p'):
-        driver.load(filename)
+        try:
+            self.driver.load(filename)
+        except FileNotFoundError:
+            print('File "%s" not found')
 
     @Command('Save data to disk')
     def save(self, filename: 'File name to save to disk'='data.p'):
-        driver.save(filename)
+        self.driver.save(filename)
 
     @Command('Search for new partners')
     def search(self):
-        found = driver.search()
+        found = self.driver.search()
         print('Found %s new partners' % found)
 
     @Command('Update existing partners')
     def update(self):
-        updated, conflicts = driver.update()
+        updated, conflicts = self.driver.update()
         print('Updated: %s, with conflicts: %s' % (updated, conflicts))
 
     @Command('Create new partner')
@@ -57,11 +63,6 @@ class ModeMain(Mode):
 
 
 if __name__ == '__main__':
-
-    driver = Driver()
-    searcher = SearcherDancesportRu()
-    driver.add_searcher(searcher)
-
-    t = ModeMain()
-    t()
+    main_mode = MainMode()
+    main_mode()
 
