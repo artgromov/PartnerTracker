@@ -1,24 +1,31 @@
-# Dance Partner Tracker
+# Partner Tracker command line utility
 ## Overview
-Simple script that will help you parse, track and keep notes about various dance partners in yaml format.
+Interactive tool that will help you keep notes about dance partners and track updates from various sources.
 
-Currently support only dancesport.ru source.
+**Currently implemented source providers and searches:**
+- dancesport.ru
+    - Currently doesnt support search parameter interactive customization and parameters changing.
+    - Following parameters are hard coded in "partner_tracker.searchers.SearcherDancesportRu.query_url":
+        ```yaml
+        Country: Russia
+        City: Moscow
+        Birth year: from 1989 to 1996
+        Body height: from 165 to 177
+        Class: Latin A,S
+        ```
 
-PartnerFinder.search_url - contains hard coded search URL (query string with following parameters):
-```yaml
-    Country: Russia
-    City: Moscow
-    Birth year: from 1989 to 1996
-    Body height: from 165 to 177
-    Class: Latin A,S
-```
+**Requirements**
+- requests
+- BeautifulSoup
+- cli (my module, link will be later)
 
 ## Roadmap
-- [ ] migrate load_from_web functionality to separate proxy/adapter class for dancesport
-- [ ] chane STATE var to more robust and easy for debugging class
-- [ ] break into several modules
-- [ ] add logging and debugging capabilities
-- [ ] add terminaltables output
-- [ ] add tests
-- [ ] build interactive cli menu with specialized module
+- [x] migrate load_from_web functionality to separate proxy/adapter class for dancesport
+- [x] chane STATE var to more robust and easy for debugging class
+- [x] break into several modules
+- [x] add logging and debugging capabilities
+- [x] build interactive cli menu with specialized module
 - [ ] add interactive workflow
+- [ ] add searcher initialization with capability to set custom search parameters
+- [ ] add tests
+
