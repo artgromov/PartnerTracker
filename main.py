@@ -19,14 +19,14 @@ class MainMode(Mode):
         self.driver.add_searcher(SearcherDancesportRu())
 
     @Command('Load data from disk')
-    def load(self, filename: 'File name to load from disk'='data.p'):
+    def load(self, filename: 'File name to load from disk' = 'data.p'):
         try:
             self.driver.load(filename)
         except FileNotFoundError:
-            print('File "%s" not found')
+            print('File "%s" not found' % filename)
 
     @Command('Save data to disk')
-    def save(self, filename: 'File name to save to disk'='data.p'):
+    def save(self, filename: 'File name to save to disk' = 'data.p'):
         self.driver.save(filename)
 
     @Command('Search for new partners')

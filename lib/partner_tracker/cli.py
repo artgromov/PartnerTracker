@@ -139,12 +139,12 @@ class Mode:
             command_name, arguments = self.get_user_input()
             try:
                 command = self.lookup_command(command_name)
-                logger.debug('calling %s(%s)' % (command.command, ', '.join(arguments)))
+                logger.debug('calling command: %s, arguments: %s' % (command.command, arguments))
                 command(self, *arguments)
             except KeyError:
-                print('Unknown command: %s' % command_name)
+                print('Unknown command: "%s"' % command_name)
             except TypeError:
-                print('Wrong arguments given: %s' % ', '.join(arguments))
+                print('Wrong arguments given: "%s"' % ', '.join(arguments))
             except StopIteration:
                 break
 
@@ -200,11 +200,11 @@ class Mode:
             print()
 
         else:
-            logger.debug('printing detailed help for %s' % command_name)
+            logger.debug('printing detailed help for "%s"' % command_name)
             try:
                 command = self.lookup_command(command_name)
             except KeyError:
-                print('Unknown command: %s' % command_name)
+                print('Unknown command: "%s"' % command_name)
             else:
                 print(command.long_help)
             print()
@@ -263,7 +263,13 @@ class ArgumentParser:
         self.change_token(symbol)
 
         if self.curr_token in ' \n':
-            self.arguments.append(self.flush_buffer())
+            if self.prev_token and self.prev_token in '"\'':
+                data = self.flush_buffer()
+                self.arguments.append(data)
+            else:
+                data = self.flush_buffer()
+                if data:
+                    self.arguments.append(data)
 
         elif self.curr_token in '"\'':
             if self.quote is None:
