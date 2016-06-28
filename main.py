@@ -4,51 +4,55 @@ import sys
 from partner_tracker import setup_logging
 from partner_tracker.driver import Driver
 from partner_tracker.searchers import SearcherDancesportRu
-from partner_tracker.cli import Mode, command
+from partner_tracker.cli import Mode, Command
 
 setup_logging()
 logger = logging.getLogger('partner_tracker')
 
 
 class ModeMain(Mode):
-    @command('Load data file from disk')
-    def load(self, filename: 'filename' = 'data.p'):
+    def __init__(self):
+        self.name = 'main'
+        self.context = ''
+
+    @Command('Load data from disk')
+    def load(self, filename: 'File name to load from disk'='data.p'):
         driver.load(filename)
 
-    @command('Save data file to disk')
-    def save(self, filename: 'filename' = 'data.p'):
+    @Command('Save data to disk')
+    def save(self, filename: 'File name to save to disk'='data.p'):
         driver.save(filename)
 
-    @command('Search for new partners')
-    def search(self, string):
+    @Command('Search for new partners')
+    def search(self):
         found = driver.search()
         print('Found %s new partners' % found)
 
-    @command('Update existing partners')
-    def update(self, string):
+    @Command('Update existing partners')
+    def update(self):
         updated, conflicts = driver.update()
         print('Updated: %s, with conflicts: %s' % (updated, conflicts))
 
-    @command('Create new partner')
-    def create(self, string):
+    @Command('Create new partner')
+    def create(self):
         logger.error('create is not implemented')
 
-    @command('Modify selected partner')
-    def modify(self, partner: 'number'):
+    @Command('Modify selected partner')
+    def modify(self, number: 'Number of partner to edit from list command output'):
+        """Redirects to selected partner's sub-mode for editing"""
         logger.error('modify is not implemented')
 
-    @command('List all partners with selected state')
-    def list(self, string: 'state list'):
-        for partner in driver.partners:
-            print(partner)
+    @Command('List all partners with selected state')
+    def list(self, states: 'State list to filter output. Examples: 1-5, 1,4-5. Defaults: 1-5'='1-5'):
+        logger.error('list is not implemented')
 
-    @command('Go to selected partner sub-mode')
-    def open(self, index: 'number'):
-        """Go to selected partner's sub-mode"""
+    @Command('Go to selected partner sub-mode')
+    def open(self, index: 'Number of partner to open from list command output'):
+        """Open specified parter in system's default web browser"""
         logger.error('open is not implemented')
 
-    @command('Import old database format')
-    def importdb(self, filename: 'filename'):
+    @Command('Import old database format')
+    def importdb(self, filename: 'File to import from'):
         logger.error('import is not implemented')
 
 
