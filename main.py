@@ -65,4 +65,3 @@ class MainMode(Mode):
 if __name__ == '__main__':
     main_mode = MainMode()
     main_mode()
-
