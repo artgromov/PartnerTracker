@@ -6,39 +6,30 @@ logger = logging.getLogger(__name__)
 
 
 class State:
-    states = [('S_NEW', 'Created'),
-              ('S_UPD', 'First time updated'),
-              ('S_ACK', 'First contact attempt'),
-              ('S_WAIT', 'Awaiting additional info'),
-              ('S_PTEST', 'Primary testing scheduled'),
-              ('S_ATEST', 'Advanced testing'),
-              ('S_IGN', 'Ignored'),
-              ('S_NOAN', 'No answer')
+    states = ['Created',
+              'First time updated',
+              'First contact attempt',
+              'Awaiting additional info',
+              'Primary testing scheduled',
+              'Advanced testing',
+              'Ignored',
+              'No answer'
               ]
 
-    state_set = set([i[0] for i in states])
-    state_dict = {k: v for k, v in states}
-
-    def __init__(self, state):
-        if state in self.state_set:
-            self.state = state
-        else:
-            raise KeyError
+    def __init__(self, state_num):
+        self.state = state_num
 
     def __repr__(self):
-        return 'State(%s)' % self.state
+        return self.state[self.state]
 
-    def __str__(self):
-        return self.state_dict[self.state]
-
-S_NEW = State('S_NEW')
-S_UPD = State('S_UPD')
-S_ACK = State('S_ACK')
-S_WAIT = State('S_WAIT')
-S_PTEST = State('S_PTEST')
-S_ATEST = State('S_ATEST')
-S_IGN = State('S_IGN')
-S_NOAN = State('S_NOAN')
+NEW = State(0)
+UPD = State(1)
+ACK = State(2)
+WAIT = State(3)
+PTEST = State(4)
+ATEST = State(5)
+IGN = State(6)
+NOAN = State(7)
 
 
 class Partner:
@@ -50,7 +41,7 @@ class Partner:
 
     def __init__(self):
         self.id = uuid.uuid4()
-        self.state = S_NEW
+        self.state = NEW
         self.providers = []
         self.conflicts = dict()
 
@@ -153,7 +144,7 @@ class Partner:
 
             if local_counter > 0:
                 changed = 1
-                if self.state == S_NEW:
-                    self.state = S_UPD
+                if self.state == NEW:
+                    self.state = UPD
 
         return changed

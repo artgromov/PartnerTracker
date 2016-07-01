@@ -4,6 +4,7 @@ import sys
 from partner_tracker import setup_logging
 from partner_tracker.driver import Driver
 from partner_tracker.searchers import SearcherDancesportRu
+from partner_tracker.prints import print_list
 from cli.blocks import Mode, Command
 
 setup_logging()
@@ -50,7 +51,7 @@ class MainMode(Mode):
 
     @Command('List all partners with selected state')
     def list(self, states: 'State list to filter output. Examples: 1-5, 1,4-5. Defaults: 1-5'='1-5'):
-        logger.error('list is not implemented')
+        print_list(self.driver.partners)
 
     @Command('Go to selected partner sub-mode')
     def open(self, index: 'Number of partner to open from list command output'):

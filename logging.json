@@ -16,6 +16,9 @@
         "partner_tracker.partner": {
             "level": "DEBUG"
         },
+        "partner_tracker.prints": {
+            "level": "DEBUG"
+        },
         "partner_tracker.providers": {
             "level": "DEBUG"
         },
