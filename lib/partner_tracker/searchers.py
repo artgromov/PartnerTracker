@@ -2,45 +2,45 @@ import logging
 import requests
 from bs4 import BeautifulSoup
 
-from partner_tracker.providers import ProviderDancesportRu
-
 logger = logging.getLogger(__name__)
 
 
-class SearcherDancesportRu:
+def search():
+    return search_on_dancesport()
+
+
+def search_on_dancesport():
     base_url = 'http://dancesport.ru'
     query_url = '/partners/?edit=1&sessionsrch=1&country=219&sex=2&city=17849&age_to=1989&age_from=1996&len_from=165&len_to=177&PClass_2[0]=A&PClass_2[1]=S'
+    search_url = base_url + query_url
 
-    def __init__(self):
-        self.search_url = self.base_url + self.query_url
+    logger.debug('searching on "%s"' % search_url)
+    pos_val = 0
+    pos_key = '&curPos='
 
-    def search(self):
-        logger.debug('searching on "%s"' % self.search_url)
-        pos_val = 0
-        pos_key = '&curPos='
+    links = []
+    while True:
+        page = requests.get(search_url + pos_key + str(pos_val))
 
-        new_providers = []
-        while True:
-            page = requests.get(self.search_url + pos_key + str(pos_val))
+        soup = BeautifulSoup(page.text, 'html.parser')
 
-            soup = BeautifulSoup(page.text, "html.parser")
+        divs = soup.find_all('div', {'class': 'one-result'})
+        if len(divs) > 0:
+            for tag in divs:
+                partner_url = base_url + tag.find('span', {'class': 'title'}).find('a').get('href')
+                if not partner_url:
+                    partner_url = base_url + tag.find('span', {'class': 'title advbg'}).find('a').get('href')
 
-            divs = soup.find_all('div', {'class': 'one-result'})
-            if len(divs) > 0:
-                for tag in divs:
-                    partner_url = self.base_url + tag.find('span', {'class': 'title'}).find('a').get('href')
-                    if not partner_url:
-                        partner_url = self.base_url + tag.find('span', {'class': 'title advbg'}).find('a').get('href')
+                links.append(partner_url)
 
-                    partner_date = tag.find('span', {'class': 'partner-reg-time'}).text
+        else:
+            break
 
-                    new_provider = ProviderDancesportRu(partner_url, partner_date)
+        pos_val += 20
 
-                    new_providers.append(new_provider)
+    return links
 
-            else:
-                break
 
-            pos_val += 20
-
-        return new_providers
+if __name__ == '__main__':
+    test = search_on_dancesport()
+    print('\n'.join(test))
