@@ -58,6 +58,7 @@ class Partner:
         self.class_la = None
         self.birth = None
         self.height = None
+        self.weight = None
         self.description = None
 
         self.goal = None

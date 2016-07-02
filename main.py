@@ -1,12 +1,11 @@
 import logging
-import sys
 import webbrowser
 
 from partner_tracker import setup_logging
 from partner_tracker.driver import Driver
 from partner_tracker.searchers import SearcherDancesportRu
 from partner_tracker.providers import ProviderDancesportRu
-from partner_tracker.prints import print_list, print_info, print_conflicts
+from partner_tracker.prints import print_list, print_info, print_attribute, print_conflicts
 from cli.blocks import Mode, Command, IncorrectArguments
 
 setup_logging()
@@ -64,29 +63,21 @@ class MainMode(Mode):
         print_list(self.driver.partners, states)
 
     @Command('Print detailed info for partner with selected number')
-    def info(self, number: 'Print detailed info for partner with selected nubmer'):
+    def show(self, number: 'Print detailed info for partner with selected nubmer'):
         partner = self.get_partner(number)
         print_info(partner)
 
-    @Command('Go to selected partner sub-mode')
-    def open(self, number: 'Open advertisement of partner with selected number'):
+    @Command('Open in web browser')
+    def open(self, number: 'Open web advertisement of partner with selected number'):
         """Open specified parter's dancesport.ru advertisment in system's default web browser"""
         partner = self.get_partner(number)
-        if len(partner.providers) > 0:
-            for provider in partner.providers:
-                if isinstance(provider, ProviderDancesportRu):
-                    logger.debug('opening partner in web browser')
-                    webbrowser.open(provider.id)
-                else:
-                    print('no dancesport.ru links found')
-        else:
-            print('no links found')
+        browse(partner)
 
     @Command('Modify selected partner')
     def modify(self, number: 'Number of partner to edit from list command output'):
         """Redirects to selected partner's sub-mode for editing"""
         partner = self.get_partner(number)
-        partner_mode = PartnerMode(partner)
+        partner_mode = PartnerMode(number, partner)
         partner_mode()
 
     @Command('Create new partner')
@@ -96,6 +87,43 @@ class MainMode(Mode):
     @Command('Import old database format')
     def importdb(self, filename: 'File to import from'):
         logger.error('import is not implemented')
+
+
+class PartnerMode(Mode):
+    def __init__(self, number, partner):
+        self.name = 'main/partner'
+        self.context = str(number)
+        self.partner = partner
+
+    @Command('Print detailed info')
+    def show(self, attribute: 'Defines attribute name to show'=None):
+        if attribute is None:
+            print_info(self.partner)
+        else:
+            try:
+                print_attribute(self.partner, attribute)
+            except KeyError:
+                raise IncorrectArguments('no such attribute %s' % attribute)
+
+    @Command('Edit attribute')
+    def edit(self, attribute: 'Defines attribute name to edit'):
+        logger.error('edit is not implemented')
+
+    @Command('Open in web browser')
+    def open(self):
+        browse(self.partner)
+
+
+def browse(partner):
+    if len(partner.providers) > 0:
+        for provider in partner.providers:
+            if isinstance(provider, ProviderDancesportRu):
+                logger.debug('opening partner in web browser')
+                webbrowser.open(provider.id)
+            else:
+                print('no dancesport.ru links found')
+    else:
+        print('no links found')
 
 
 if __name__ == '__main__':

@@ -11,19 +11,19 @@
             "level": "DEBUG"
         },
         "partner_tracker.driver": {
-            "level": "DEBUG"
+            "level": "ERROR"
         },
         "partner_tracker.partner": {
-            "level": "DEBUG"
+            "level": "ERROR"
         },
         "partner_tracker.prints": {
             "level": "DEBUG"
         },
         "partner_tracker.providers": {
-            "level": "DEBUG"
+            "level": "ERROR"
         },
         "partner_tracker.searchers": {
-            "level": "DEBUG"
+            "level": "ERROR"
         },
         "cli.blocks": {
             "level": "DEBUG"
