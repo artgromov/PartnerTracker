@@ -10,7 +10,7 @@ def to_str(field):
         return str(field)
 
 
-def print_list(partners):
+def print_list(partners, states):
     separator = '+-----+-----------------+--------------------------------+--------------------------------+--------------------------------+---------------------------+'
     title     = '| num | name            | year sm  st la club            | description                    | last note                      | state                     |'
 
@@ -43,8 +43,30 @@ def print_list(partners):
     print('\n'.join(lines))
 
 
-def print_partner(object):
-    pass
+def print_conflicts(partners):
+    separator = '+-------+'
+    title     = '| bla   |'
+
+    template  = ''
+    template_filler = ''
+
+    lines = [separator,
+             title,
+             separator
+             ]
+
+    for num, obj in enumerate(partners):
+        if obj.conflicts:
+            string = ''
+            lines.append(string)
+    print('\n'.join(lines))
+
+
+def print_info(partner):
+    print(partner)
+
+
+
 
 '''
 state

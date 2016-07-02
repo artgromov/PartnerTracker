@@ -20,7 +20,7 @@ class State:
         self.state = state_num
 
     def __repr__(self):
-        return self.state[self.state]
+        return self.states[self.state]
 
 NEW = State(0)
 UPD = State(1)
