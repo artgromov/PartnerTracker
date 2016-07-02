@@ -2,6 +2,8 @@ import logging
 import uuid
 import re
 
+from partner_tracker.updaters import update
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +44,6 @@ class Partner:
     def __init__(self):
         self.id = uuid.uuid4()
         self.state = NEW
-        self.providers = []
         self.conflicts = dict()
 
         self.name = None
@@ -64,6 +65,7 @@ class Partner:
         self.goal = None
         self.expectations = None
         self.competition_last_date = None
+        self.links = []
         self.images = []
         self.videos = []
 
@@ -93,59 +95,66 @@ class Partner:
     def __hash__(self):
         return hash(self.id)
 
-    def add_provider(self, provider):
-        if provider not in self.providers:
-            logger.debug('attaching new provider: "%s"' % provider.id)
-            self.providers.append(provider)
-
     def update_attribute(self, name, new_value, forced=False):
-        if new_value:
-            old_value = self.__dict__[name]
+        old_value = self.__dict__[name]
 
-            if old_value == new_value:
+        if old_value == new_value:
+            return 0
+
+        elif old_value is None:
+            logger.debug('updating attribute: "%s" with value: "%s"' % (name, new_value))
+            self.__dict__[name] = new_value
+            return 1
+
+        elif isinstance(old_value, list):
+            if new_value not in old_value:
+                logger.debug('updating attribute: "%s" with value: "%s"' % (name, new_value))
+                self.__dict__[name].append(new_value)
+                return 1
+            else:
                 return 0
 
+        elif old_value != new_value:
             if not forced:
-                if not old_value:
-                    logger.debug('updating attribute: "%s" with value: "%s"' % (name, new_value))
-                    self.__dict__[name] = new_value
-                    return 1
+                logger.debug('conflict found for attribute: "%s"' % name)
+                if name not in self.conflicts:
+                    self.conflicts[name] = [old_value]
 
-                elif isinstance(old_value, list):
-                    logger.debug('updating attribute: "%s" with value: "%s"' % (name, new_value))
-                    self.__dict__[name] = list(set(old_value + new_value))
-                    return 1
+                if new_value not in self.conflicts[name]:
+                    self.conflicts[name].append(new_value)
 
-                elif old_value != new_value:
-                    logger.debug('conflict found for attribute: "%s"' % name)
-                    if name not in self.conflicts:
-                        self.conflicts[name] = [old_value]
-
-                    if new_value not in self.conflicts[name]:
-                        self.conflicts[name].append(new_value)
-
-                    return 0
+                return 1
 
             else:
                 logger.debug('forced updating attribute: "%s" with value: "%s"' % (name, new_value))
                 self.__dict__[name] = new_value
+                try:
+                    self.conflicts.pop(name)
+                except KeyError:
+                    pass
+
                 return 1
 
     def update(self):
         changed = 0
-        for provider in self.providers:
-            local_counter = 0
-            provider.update()
-            new_data = provider.get_changes()
-            if new_data:
-                for name, new_value in new_data.items():
-                    local_counter += self.update_attribute(name, new_value)
+        if self.links:
+            for link in self.links:
+                logger.debug('updating from %s' % link)
+                local_counter = 0
+                new_data = update(link)
+                if new_data:
+                    for name, new_value in new_data.items():
+                        local_counter += self.update_attribute(name, new_value)
 
-                provider.reset_changes()
+                if local_counter > 0:
+                    changed = 1
+                    if self.state == NEW:
+                        self.state = UPD
 
-            if local_counter > 0:
-                changed = 1
-                if self.state == NEW:
-                    self.state = UPD
+        else:
+            logger.debug('cannot update, no source links specified')
 
         return changed
+
+
+

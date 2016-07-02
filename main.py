@@ -3,9 +3,9 @@ import webbrowser
 
 from partner_tracker import setup_logging
 from partner_tracker.driver import Driver
-from partner_tracker.searchers import SearcherDancesportRu
-from partner_tracker.providers import ProviderDancesportRu
-from partner_tracker.prints import print_list, print_info, print_attribute, print_conflicts
+from partner_tracker.searchers import search_on_dancesport
+from partner_tracker.updaters import update_from_dancesport
+from partner_tracker.printers import print_list, print_info, print_attribute, print_conflicts
 from cli.blocks import Mode, Command, IncorrectArguments
 
 setup_logging()
@@ -18,7 +18,6 @@ class MainMode(Mode):
         self.context = ''
 
         self.driver = Driver()
-        self.driver.add_searcher(SearcherDancesportRu())
 
     def get_partner(self, number):
         try:
@@ -95,6 +94,9 @@ class PartnerMode(Mode):
         self.context = str(number)
         self.partner = partner
 
+        if number == 28:
+            self.partner.providers[0].name = 'blabla'
+
     @Command('Print detailed info')
     def show(self, attribute: 'Defines attribute name to show'=None):
         if attribute is None:
@@ -106,8 +108,62 @@ class PartnerMode(Mode):
                 raise IncorrectArguments('no such attribute %s' % attribute)
 
     @Command('Edit attribute')
-    def edit(self, attribute: 'Defines attribute name to edit'):
-        logger.error('edit is not implemented')
+    def edit(self, attribute: 'Defines attribute name to edit', value: 'Set new value for attribute'):
+        read_only = ('id', 'providers', 'conflicts', 'notes')
+        if attribute in read_only:
+            raise IncorrectArguments('attribute cannot be modified with this command')
+
+        elif attribute in self.partner.__dict__:
+            if attribute not in self.partner.conflicts:
+                self.partner.update_attribute(attribute, value, forced=True)
+
+            else:
+                self.partner.update_attribute(attribute, value)
+                values = self.partner.conflicts[attribute]
+                num_of_values = len(values)
+                print('%s conflicted values found for %s:' % (attribute, num_of_values))
+
+                for num, line in enumerate(values):
+                    print('\t{}. {}'.format(num + 1, line))
+
+                print()
+                choices = range(num_of_values)
+                default_choice = num_of_values - 1
+                while True:
+                    index = input('Choose which value to write [%s]: ' % (default_choice + 1))
+                    if index.strip() == '':
+                        index = default_choice
+                        logger.debug('using default value: %s' % values[index])
+                        self.partner.update_attribute(attribute, values[index], forced=True)
+                        break
+
+                    elif index.isdigit():
+                        index = int(index) - 1
+                        if index in choices:
+                            logger.debug('using value: %s' % values[index])
+                            self.partner.update_attribute(attribute, values[index], forced=True)
+                        break
+
+                    else:
+                        print('Incorrect value.')
+
+        else:
+            raise IncorrectArguments('no such attribute')
+
+    @Command('Add or remove notes')
+    def note(self, action: 'Specify <add|remove>', data: 'Text field when action=add, number to delete when action=remove'):
+        pass
+
+    @Command('Update current partner')
+    def update(self):
+        test =  self.partner.update()
+        if test == 1:
+            if len(self.partner.conflicts) > 0:
+                print('Updated with conflicts')
+            else:
+                print('Updated successfully')
+        else:
+            print('No updates found')
 
     @Command('Open in web browser')
     def open(self):
@@ -115,15 +171,13 @@ class PartnerMode(Mode):
 
 
 def browse(partner):
-    if len(partner.providers) > 0:
-        for provider in partner.providers:
-            if isinstance(provider, ProviderDancesportRu):
-                logger.debug('opening partner in web browser')
-                webbrowser.open(provider.id)
-            else:
-                print('no dancesport.ru links found')
+    if len(partner.links) > 0:
+        for link in partner.links:
+            logger.debug('opening partner in web browser')
+            webbrowser.open(link)
+
     else:
-        print('no links found')
+        print('No links found')
 
 
 if __name__ == '__main__':
