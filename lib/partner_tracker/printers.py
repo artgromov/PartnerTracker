@@ -40,7 +40,11 @@ def print_list(partners, states):
                                  )
         lines.append(string)
     lines.append(separator)
-    print('\n'.join(lines))
+
+    if len(partners) > 0:
+        print('\n'.join(lines))
+    else:
+        print('No partners found')
 
 
 def print_conflicts(partners):
@@ -132,6 +136,7 @@ def print_info(partner):
              separator
              ]
 
+    lines += add_list('links')
     lines += add_list('images')
     lines += add_list('videos')
 
