@@ -1,6 +1,8 @@
 import logging
 import uuid
 import re
+import webbrowser
+from textwrap import wrap
 
 from partner_tracker.updaters import update
 
@@ -18,20 +20,11 @@ class State:
               'No answer'
               ]
 
-    def __init__(self, state_num):
-        self.state = state_num
+    def __init__(self, id):
+        self.id = id
 
     def __repr__(self):
-        return self.states[self.state]
-
-NEW = State(0)
-UPD = State(1)
-ACK = State(2)
-WAIT = State(3)
-PTEST = State(4)
-ATEST = State(5)
-IGN = State(6)
-NOAN = State(7)
+        return self.states[self.id]
 
 
 class Partner:
@@ -43,7 +36,7 @@ class Partner:
 
     def __init__(self):
         self.id = uuid.uuid4()
-        self.state = NEW
+        self.state = State(0)
         self.conflicts = dict()
 
         self.name = None
@@ -97,28 +90,36 @@ class Partner:
 
     def update_attribute(self, name, new_value, forced=False):
         old_value = self.__dict__[name]
+        updated = 0
 
-        if old_value == new_value:
-            return 0
-
-        elif old_value is None:
+        if old_value is None and new_value is not None:
             logger.debug('updating attribute: "%s" with value: "%s"' % (name, new_value))
             self.__dict__[name] = new_value
-            return 1
+            updated = 1
 
         elif isinstance(old_value, list):
-            if new_value not in old_value:
-                logger.debug('updating attribute: "%s" with value: "%s"' % (name, new_value))
-                if isinstance(new_value, list) or isinstance(new_value, tuple):
-                    self.__dict__[name] += list(new_value)
-                else:
-                    self.__dict__[name].append(new_value)
-                return 1
+            if isinstance(new_value, list) or isinstance(new_value, tuple):
+                for item in new_value:
+                    if item not in old_value:
+                        logger.debug('adding new item "%s" to  attribute "%s"' % (item, name))
+                        self.__dict__[name].append(str(item))
+                        updated = 1
             else:
-                return 0
+                if new_value not in old_value:
+                    logger.debug('adding new item "%s" to  attribute "%s"' % (new_value, name))
+                    self.__dict__[name].append(str(new_value))
+                    updated = 1
+
+        elif forced:
+            logger.debug('forced updating attribute: "%s" with value: "%s"' % (name, new_value))
+            self.__dict__[name] = new_value
+            try:
+                self.conflicts.pop(name)
+            except KeyError:
+                pass
+            updated = 1
 
         elif old_value != new_value:
-            if not forced:
                 logger.debug('conflict found for attribute: "%s"' % name)
                 if name not in self.conflicts:
                     self.conflicts[name] = [old_value]
@@ -126,17 +127,9 @@ class Partner:
                 if new_value not in self.conflicts[name]:
                     self.conflicts[name].append(new_value)
 
-                return 1
+                updated = 1
 
-            else:
-                logger.debug('forced updating attribute: "%s" with value: "%s"' % (name, new_value))
-                self.__dict__[name] = new_value
-                try:
-                    self.conflicts.pop(name)
-                except KeyError:
-                    pass
-
-                return 1
+        return updated
 
     def update(self):
         changed = 0
@@ -151,13 +144,112 @@ class Partner:
 
                 if local_counter > 0:
                     changed = 1
-                    if self.state == NEW:
-                        self.state = UPD
+                    if self.state.id == 0:
+                        self.state = State(1)
 
         else:
             logger.debug('cannot update, no source links specified')
 
         return changed
 
+    def wrap_attr(self, name):
+        value = self.__dict__[name]
+        lines = []
+
+        template = '| {:30.30} | {:70.70} |'
+
+        if value is None:
+            value = ['']
+
+        elif isinstance(value, str):
+            value = wrap(value, 70)
+
+        elif isinstance(value, list):
+            if len(value) == 0:
+                value = ['']
+
+        else:
+            value = wrap(str(value), 70)
+
+        for num, item in enumerate(value):
+            if num == 0:
+                lines.append(template.format(name, item))
+            else:
+                lines.append(template.format('', item))
+
+        return lines
+
+    def print(self, attribute=None):
+        separator = ['+--------------------------------+------------------------------------------------------------------------+']
+
+        lines = []
+
+        if attribute is None:
+            logger.debug('printing full info')
+            lines += separator
+            lines += self.wrap_attr('name')
+            lines += self.wrap_attr('phone')
+            lines += self.wrap_attr('email')
+            lines += separator
+            lines += self.wrap_attr('state')
+            lines += separator
+            lines += self.wrap_attr('country')
+            lines += self.wrap_attr('city')
+            lines += self.wrap_attr('org')
+            lines += self.wrap_attr('club')
+            lines += self.wrap_attr('trainer')
+            lines += self.wrap_attr('class_st')
+            lines += self.wrap_attr('class_la')
+            lines += self.wrap_attr('birth')
+            lines += self.wrap_attr('height')
+            lines += self.wrap_attr('weight')
+            lines += self.wrap_attr('description')
+            lines += separator
+            lines += self.wrap_attr('links')
+            lines += self.wrap_attr('images')
+            lines += self.wrap_attr('videos')
+            lines += separator
+            lines += self.wrap_attr('goal')
+            lines += self.wrap_attr('expectations')
+            lines += self.wrap_attr('competition_last_date')
+            lines += separator
+            lines += self.wrap_attr('change_org')
+            lines += self.wrap_attr('change_club')
+            lines += self.wrap_attr('change_trainer')
+            lines += separator
+            lines += self.wrap_attr('schedule_practice')
+            lines += self.wrap_attr('schedule_coached_practice')
+            lines += self.wrap_attr('schedule_competition')
+            lines += self.wrap_attr('schedule_training_time')
+            lines += separator
+            lines += self.wrap_attr('conflicts')
+            lines += separator
+            lines += self.wrap_attr('notes')
+            lines += separator
+
+            print('\n'.join(lines))
+
+        else:
+            logger.debug('printing attribute "%s"' % attribute)
+            lines += separator
+            lines += self.wrap_attr(attribute)
+            lines += separator
+
+            print('\n'.join(lines))
+
+    def browse(self):
+        if len(self.links) > 0:
+            for link in self.links:
+                logger.debug('opening link %s in web browser' % link)
+                webbrowser.open(link)
+        else:
+            logger.error('no links found')
+            raise NoLinksFound
 
 
+class MyException(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+class NoLinksFound(MyException):
+    pass

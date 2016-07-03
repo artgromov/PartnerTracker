@@ -9,6 +9,8 @@ def update(url):
     if url.startswith('http://dancesport.ru'):
         logger.debug('redirecting to update_from_dancesport(%s)' % url)
         return update_from_dancesport(url)
+    else:
+        return None
 
 
 def update_from_dancesport(url):
@@ -73,7 +75,7 @@ def update_from_dancesport(url):
             # Parse note data
             for i in notes:
                 if i.startswith('Год рождения'):
-                    data['birth'] = int(i.split(':')[1])
+                    data['birth'] = i.split(':')[1]
                     continue
 
                 if i.startswith('Город'):
@@ -82,7 +84,7 @@ def update_from_dancesport(url):
                     continue
 
                 if i.startswith('Рост'):
-                    data['height'] = int(i.split(':')[1].split(' ')[0])
+                    data['height'] = i.split(':')[1].split(' ')[0]
                     continue
 
                 if i.startswith('Класс'):
@@ -113,8 +115,6 @@ def update_from_dancesport(url):
 
 
 if __name__ == '__main__':
-    #logging.basicConfig(level=logging.DEBUG)
-
     def print_attr(instance):
         print('-'*100)
         print('{:50.50}{}'.format('attribute name', 'value'))

@@ -4,29 +4,29 @@
         "handlers": [
             "console"
         ],
-        "level": "DEBUG"
+        "level": "CRITICAL"
     },
     "loggers": {
         "partner_tracker": {
-            "level": "DEBUG"
+            "level": "CRITICAL"
         },
         "partner_tracker.driver": {
-            "level": "DEBUG"
+            "level": "CRITICAL"
         },
         "partner_tracker.partner": {
-            "level": "DEBUG"
+            "level": "CRITICAL"
         },
         "partner_tracker.prints": {
-            "level": "DEBUG"
+            "level": "CRITICAL"
         },
         "partner_tracker.providers": {
-            "level": "DEBUG"
+            "level": "CRITICAL"
         },
         "partner_tracker.searchers": {
-            "level": "DEBUG"
+            "level": "CRITICAL"
         },
         "cli.blocks": {
-            "level": "DEBUG"
+            "level": "CRITICAL"
         }
     },
     "handlers": {
