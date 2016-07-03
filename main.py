@@ -1,10 +1,9 @@
 import logging
 import webbrowser
+from datetime import datetime
 
 from partner_tracker import setup_logging
 from partner_tracker.driver import Driver
-from partner_tracker.searchers import search_on_dancesport
-from partner_tracker.updaters import update_from_dancesport
 from partner_tracker.printers import print_list, print_info, print_attribute, print_conflicts
 from cli.blocks import Mode, Command, IncorrectArguments
 
@@ -151,14 +150,41 @@ class PartnerMode(Mode):
             raise IncorrectArguments('no such attribute')
 
     @Command('Add or remove notes')
-    def note(self, action: 'Specify <add|remove>', data: 'Text field when action=add, number to delete when action=remove'):
-        pass
+    def note(self, action: 'Specify <add|del|show>', data: 'Text field when action=add, number to delete when action=del, ignored when action=show'=''):
+        notes = self.partner.notes
+        if action == 'add':
+            if data == '':
+                raise IncorrectArguments('new note data is empty')
+            else:
+                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                notes.append('{} {}'.format(timestamp, data))
+
+        elif action == 'del':
+            if data.isdigit():
+                number = (int(data) - 1)
+                if number in list(range(len(notes))):
+                    notes.pop(number)
+                else:
+                    raise IncorrectArguments('incorrect note number')
+            else:
+                raise IncorrectArguments('incorrect note number')
+
+        elif action == 'show':
+            if len(notes) > 0:
+                print('Notes:')
+                for n, line in enumerate(notes):
+                    print('\t{}. {}'.format(n+1, line))
+                print()
+            else:
+                print('No notes found')
+
+        else:
+            raise IncorrectArguments('incorrect action for note command')
 
     @Command('Update current partner')
     def update(self):
-        test =  self.partner.update()
-        if test == 1:
-            if len(self.partner.conflicts) > 0:
+        if self.partner.update():
+            if self.partner.conflicts:
                 print('Updated with conflicts')
             else:
                 print('Updated successfully')

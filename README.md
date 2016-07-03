@@ -26,6 +26,7 @@ Interactive tool that will help you keep notes about dance partners and track up
 - [x] add logging and debugging capabilities
 - [x] build interactive cli menu with specialized module
 - [ ] add interactive workflow
+- [ ] add timezone support
 - [ ] migrate data storage from pickle to ORM
 - [ ] add searcher initialization with capability to set custom search parameters
 - [ ] add tests
