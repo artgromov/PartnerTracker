@@ -4,6 +4,7 @@ from datetime import datetime
 
 from partner_tracker import setup_logging
 from partner_tracker.driver import Driver
+from partner_tracker.partner import Partner
 from partner_tracker.printers import print_list, print_info, print_attribute, print_conflicts
 from cli.blocks import Mode, Command, IncorrectArguments
 
@@ -19,17 +20,9 @@ class MainMode(Mode):
         self.driver = Driver()
 
     def get_partner(self, number):
-        try:
-            index = int(number) - 1
-        except ValueError:
-            raise IncorrectArguments('incorrect symbol passed')
-        else:
-            try:
-                partner = self.driver.partners[index]
-            except IndexError:
-                raise IncorrectArguments('no partner with specified number: %s' % number)
-            else:
-                return partner
+        index = get_index(number, len(self.driver.partners))
+        partner = self.driver.partners[index]
+        return number, partner
 
     @Command('Load data from disk')
     def load(self, filename: 'File name to load from disk' = 'data.p'):
@@ -62,25 +55,43 @@ class MainMode(Mode):
 
     @Command('Print detailed info for partner with selected number')
     def show(self, number: 'Print detailed info for partner with selected nubmer'):
-        partner = self.get_partner(number)
+        number, partner = self.get_partner(number)
         print_info(partner)
 
     @Command('Open in web browser')
     def open(self, number: 'Open web advertisement of partner with selected number'):
         """Open specified parter's dancesport.ru advertisment in system's default web browser"""
-        partner = self.get_partner(number)
+        number, partner = self.get_partner(number)
         browse(partner)
 
     @Command('Modify selected partner')
     def modify(self, number: 'Number of partner to edit from list command output'):
         """Redirects to selected partner's sub-mode for editing"""
-        partner = self.get_partner(number)
+        number, partner = self.get_partner(number)
         partner_mode = PartnerMode(number, partner)
         partner_mode()
 
     @Command('Create new partner')
     def create(self):
-        logger.error('create is not implemented')
+        number = len(self.driver.partners)
+        partner = Partner()
+        self.driver.partners.append(partner)
+        partner_mode = PartnerMode(number, partner)
+        partner_mode()
+
+    @Command('Delete selected partner')
+    def delete(self, number: 'Number of partner to delete'):
+        index = get_index(number, len(self.driver.partners))
+        while True:
+            key = input('You are going to delete partner number: %s, name: %s. Is it correct (y/n) [n]? ' % (number, self.driver.partners[index].name))
+            if key == '' or key in 'Nn':
+                print('Operation cancelled')
+                break
+
+            elif key in 'Yy':
+                self.driver.partners.pop(index)
+                print('Deleted successfully')
+                break
 
     @Command('Import old database format')
     def importdb(self, filename: 'File to import from'):
@@ -92,9 +103,6 @@ class PartnerMode(Mode):
         self.name = 'main/partner'
         self.context = str(number)
         self.partner = partner
-
-        if number == 28:
-            self.partner.providers[0].name = 'blabla'
 
     @Command('Print detailed info')
     def show(self, attribute: 'Defines attribute name to show'=None):
@@ -183,17 +191,32 @@ class PartnerMode(Mode):
 
     @Command('Update current partner')
     def update(self):
-        if self.partner.update():
-            if self.partner.conflicts:
-                print('Updated with conflicts')
+        if len(self.partner.links) > 0:
+            if self.partner.update():
+                if self.partner.conflicts:
+                    print('Updated with conflicts')
+                else:
+                    print('Updated successfully')
             else:
-                print('Updated successfully')
+                print('No updates found')
         else:
-            print('No updates found')
+            print('No source links found')
 
     @Command('Open in web browser')
     def open(self):
         browse(self.partner)
+
+
+def get_index(string, max_value, min_value=0):
+    if string.isdigit():
+        index = int(string) - 1
+    else:
+        raise IncorrectArguments('"%s" incorrect symbol' % string)
+
+    if index in list(range(min_value, max_value)):
+        return index
+    else:
+        raise IncorrectArguments('"%s" is not within correct number range' % string)
 
 
 def browse(partner):
@@ -201,7 +224,6 @@ def browse(partner):
         for link in partner.links:
             logger.debug('opening partner in web browser')
             webbrowser.open(link)
-
     else:
         print('No links found')
 
