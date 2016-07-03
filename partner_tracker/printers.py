@@ -1,5 +1,4 @@
 import logging
-from textwrap import wrap
 
 logger = logging.getLogger(__name__)
 

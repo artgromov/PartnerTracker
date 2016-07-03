@@ -1,3 +1,4 @@
+import os
 import logging
 from datetime import datetime
 
@@ -7,7 +8,8 @@ from partner_tracker.partner import Partner, State, NoLinksFound
 from partner_tracker.printers import print_list, print_conflicts
 from cli.blocks import Mode, Command, IncorrectArguments
 
-setup_logging()
+work_dir = os.path.dirname(os.path.abspath(__file__))
+setup_logging(os.path.join(work_dir, 'logging.json'))
 logger = logging.getLogger('partner_tracker')
 
 
@@ -25,16 +27,18 @@ class MainMode(Mode):
 
     @Command('Load data from disk')
     def load(self, filename: 'File name to load from disk' = 'data.p'):
+        path = os.path.join(work_dir, filename)
         try:
-            self.driver.load(filename)
-            print('Data is loaded from file %s' % filename)
+            self.driver.load(path)
+            print('Data is loaded from file %s' % path)
         except FileNotFoundError:
-            print('File "%s" not found' % filename)
+            print('File "%s" not found' % path)
 
     @Command('Save data to disk')
     def save(self, filename: 'File name to save to disk' = 'data.p'):
-        self.driver.save(filename)
-        print('Data is saved to file %s' % filename)
+        path = os.path.join(work_dir, filename)
+        self.driver.save(path)
+        print('Data is saved to file %s' % path)
 
     @Command('List all partners with selected state')
     def list(self, states: 'State list to filter output. Examples: 1-5, 1,4-5. Defaults: 1-5'='1-5'):
@@ -101,28 +105,6 @@ class MainMode(Mode):
     @Command('List all partners with merged conflicts')
     def conflicts(self):
         print_conflicts(self.driver.partners)
-
-    @Command('Import old database format')
-    def importdb(self, filename: 'File to import from'):
-        import yaml
-
-        states = {'init': 1,
-                  'syn': 2,
-                  'ack': 3,
-                  'full': 4,
-                  'test': 5,
-                  'ignore': 6,
-                  'na': 7,
-                  'noan': 7,
-                  }
-
-        with open(filename) as file:
-            data = yaml.load(file.read())
-            for partner in self.driver.partners:
-                for item in data:
-                    if partner.links[0] == item['link']:
-                        partner.update_attribute('notes', item['notes'])
-                        partner.state.id = states[item['state']]
 
 
 class PartnerMode(Mode):

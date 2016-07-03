@@ -1,4 +1,9 @@
-def setup_logging(filename='logging.json'):
+import cli.blocks
+
+__version__ = ('2016', '01')
+
+
+def setup_logging(filename='logging.json'):  # pragma: no cover
     import sys
     import json
     import logging.config
