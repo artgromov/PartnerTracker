@@ -109,7 +109,10 @@ class Partner:
         elif isinstance(old_value, list):
             if new_value not in old_value:
                 logger.debug('updating attribute: "%s" with value: "%s"' % (name, new_value))
-                self.__dict__[name].append(new_value)
+                if isinstance(new_value, list) or isinstance(new_value, tuple):
+                    self.__dict__[name] += list(new_value)
+                else:
+                    self.__dict__[name].append(new_value)
                 return 1
             else:
                 return 0
