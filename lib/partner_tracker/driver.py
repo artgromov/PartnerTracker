@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 class Driver:
     def __init__(self):
-        self.searchers = []
         self.links = []
         self.partners = []
 
