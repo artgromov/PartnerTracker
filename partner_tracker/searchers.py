@@ -11,7 +11,7 @@ def search():
 
 def search_on_dancesport():
     base_url = 'http://dancesport.ru'
-    query_url = '/partners/?edit=1&sessionsrch=1&country=219&sex=2&city=17849&age_to=1989&age_from=1996&len_from=165&len_to=177&PClass_2[]=B&PClass_2[]=A&PClass_2[]=S'
+    query_url = '/partners/?edit=1&sessionsrch=1&country=219&sex=2&city=17849&age_to=1985&age_from=1995&len_from=165&len_to=179&PClass_2[]=B&PClass_2[]=A'
     search_url = base_url + query_url
 
     logger.debug('searching on "%s"' % search_url)
