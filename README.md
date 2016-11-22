@@ -19,16 +19,7 @@ Interactive tool that will help you keep notes about dance partners and track up
 **Requirements**
 - requests
 - bs4
+- cli (my module for command line interactive loop: https://github.com/artgromov/cli)
 
-## Roadmap
-- [x] migrate load_from_web functionality to separate proxy/adapter class for dancesport
-- [x] chane STATE var to more robust and easy for debugging class
-- [x] break into several modules
-- [x] add logging and debugging capabilities
-- [x] build interactive cli menu with specialized module
-- [x] add interactive workflow
-- [ ] add timezone support for notes timestamps
-- [ ] migrate data storage from pickle to ORM
-- [ ] add searcher initialization with capability to set custom search parameters
-- [ ] add tests
-
+## Status
+Project closed
